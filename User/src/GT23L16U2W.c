@@ -210,11 +210,14 @@ u8t GT32_WirteByte(u8t bytes)
 	return (bytes);
 }
 
-void Char2Lattice(u16t ucode,u8t *latticeArray,u16t fontSize)
+void Char2Lattice(u16t ucode,u8t *latticeArray,u32t fontSize)
 {
 	u8t i;
+	u8t j=0;
 	u8t latticeLength;
 	u32t fontAddress;
+	u8t fontWidth;
+	fontWidth=GET_FONT_WIDTH(fontSize);
 	switch(fontSize)
 	{
 		case FONT_SIZE_11X12:
@@ -244,7 +247,8 @@ void Char2Lattice(u16t ucode,u8t *latticeArray,u16t fontSize)
 	GT32_WirteByte((u8t)fontAddress);
 	for(i=0;i<latticeLength;i++)
 	{
-		latticeArray[i]=GT32_WirteByte(0xff);
+		latticeArray[j]=GT32_WirteByte(0xff);
+		j=j+(16/fontWidth);
   	}
   	Set_GTCE; 	
 }

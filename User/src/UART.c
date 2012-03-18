@@ -392,7 +392,7 @@ INT8U Time_Judge(INT8U *str)
      if(flag==1)           //判断是否在有效的时间段里面。
      {
       //   gettime(&realtime,&Time[0]);
-         realtime = gottime();
+         //realtime = gottime();
          if(realtime.hour>=str[0]&&realtime.hour<=str[3])
          {
             if(realtime.hour>str[0] && realtime.hour<str[3])
@@ -724,7 +724,7 @@ void USART1_IRQHandler(void)
                             }
                             else if(R_Buffer[5] == 0xd5)  // 发送本地时间。
                             {
-                                realtime = gottime();
+                                //realtime =gottime();
                                 R_Buffer[0] = realtime.year;
                                 R_Buffer[1] = realtime.month;
                                 R_Buffer[2] = realtime.day;
@@ -736,7 +736,7 @@ void USART1_IRQHandler(void)
                             }
                             else if(R_Buffer[5] == 0xd6) 
                             {
-                                set_time(&R_Buffer[16]);
+                                //set_time(&R_Buffer[16]);
                                 Send_Packet(0xb6,1,&R_Buffer[0],6+0);
                             }                                                 
                             return;

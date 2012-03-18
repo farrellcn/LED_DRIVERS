@@ -26,12 +26,16 @@
 #define Clr_GTCE GPIOA->BRR   = 0x0001<<1;
 */
 
-
-#define FONT_SIZE_11X12			0x1112
-#define FONT_SIZE_15X16			0x1516
-#define FONT_SIZE_7X8_ASCII		0x0708
-#define FONT_SIZE_8X16_ASCII	0x0816
-
+#define FONT_SIZE_11X12			0x11616
+#define FONT_SIZE_15X16			0x21616
+#define FONT_SIZE_7X8_ASCII		0x30808
+#define FONT_SIZE_8X16_ASCII	0x40816
+/*
+#define FONT_SIZE_11X12			0x11616
+#define FONT_SIZE_15X16			0x21616
+#define FONT_SIZE_7X8_ASCII		0x30808
+#define FONT_SIZE_8X16_ASCII	0x40816
+*/
 #define FONT_11X12_LENGTH		12
 #define FONT_15X16_LENGTH		32
 #define FONT_7X8_LENGTH			8
@@ -43,6 +47,14 @@
 #define FONT_7X8_ASCII_BASE		0x188ED8
 #define FONT_8X16_ASCII_BASE	0x1883D8
 
+#define FONT_WIDTH		16
+#define FONT_HEIGHT		16
+#define FONT_LENGTH		FONT_15X16_LENGTH
+
+#define GET_FONT_WIDTH(x)	((((x>>12)&0x00000f)*10)+((x>>8)&0x00000f))	
+#define GET_FONT_HEIGHT(y)	((((y>>4)&0x00000f)*10)+(y&0x00000f))	
+
+
 void GT32_Init(void);
 boolean GT32_Test(void);
 u32t GetFont8Address(u16t ucode);
@@ -51,7 +63,7 @@ u32t GetFont15X16Address(u16t ucode);
 u32t GetFont7X8AsciiAddress(u16t ucode);
 u32t GetFont8X16AsciiAddress(u16t ucode);
 u8t GT32_WirteByte(u8t bytes);
-void Char2Lattice(u16t ucode,u8t *latticeArray,u16t fontSize);
+void Char2Lattice(u16t ucode,u8t *latticeArray,u32t fontSize);
 
                                       
 #endif

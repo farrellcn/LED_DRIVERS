@@ -25,7 +25,7 @@ void USART1_SendByte(unsigned char temp);
 
 void USART1_Printf(char *pch);
 
-void LED_Display();
+void LED_Display(void);
 
 void LED_Send(INT8U *pch,INT8U num);//发送指定数量的数据包。
 

@@ -1,7 +1,7 @@
 #include "LedDriver.h"
-u8t LedBuffer[5][32];
-u8t LedNextCol[32];
-u8t LedNextRow[4][32];
+u8t LedBuffer[LED_COLS/FONT_WIDTH][FONT_LENGTH];
+u8t LedNextCol[FONT_LENGTH];
+u8t LedNextRow[LED_COLS/FONT_WIDTH][FONT_LENGTH];
 
 void LedInit(void)
 {
@@ -47,7 +47,7 @@ void LED_ONOFF(u8t flag)
 {
     //INT8U word[34]={0X00,0X20,0X00,0X20,0X00,0X20,0X00,0X20,0X00,0X20,0X00,0X20,0X00,0X20,0X00,0X20,0X00,0X20,0X00,0X20,0X00,0X20,0X00,0X20,0X00,0X20,0X00,0X20,0X00,0X20,0X00,0X20,0X00,0X20};
     if(flag != 0)
-    {
+{
         Clr_CE01;
         Clr_CE00;
     }
@@ -86,8 +86,62 @@ void WriteByte(u8t bytes,u8t row)
 				Set_DATH;
 			}
 		}
+		/*
+		if(row>8)
+		{
+			if(bytes&0x80)
+			{
+				Clr_DATH;
+			}
+			else
+			{
+				Set_DATH;
+			}
+		}
+		else
+		{
+			if(bytes&0x80)
+			{
+				Clr_DATL;
+			}
+			else
+			{
+				Set_DATL;
+			}
+		}
+		*/
 		Set_SCK;
+		Delay_ms(1);
 		bytes<<=1;
+		Clr_SCK;
+	}
+}
+
+void WriteDoubleRowByte(u8t upperByte,u8t lowerByte,u8t row)
+{
+	u8t i;
+	for(i=0;i<8;i++)
+	{
+		if(upperByte&0x80)
+		{
+			Clr_DATL;
+		}
+		else
+		{
+			Set_DATL;
+		}
+		if(lowerByte&0x80)
+		{
+			Clr_DATH;
+		}
+		else
+		{
+			Set_DATH;
+		}
+		Set_SCK;
+		Delay_ms(1);
+		upperByte<<=1;
+		lowerByte<<=1;
 		Clr_SCK;
 	}
 }
@@ -162,14 +216,22 @@ void LedDisplay(u8t *textStr,u8t strLength,u8t frequence,u8t runStyle)
 	}
 }
 
-void Dis_Static(u8t *textStr,u8t strLength)
+void Dis_Static(u8t *textStr,u8t strLength,u32t fontSize)
 {
-	u8t i=0;
+	u32t i=0;
 	//u8t j=0;
 	u8t k=0;
 	//u8t row=0;
 	u16t ucode=0;
 	u8t words=0;
+	u8t fontWidth;
+	u8t fontHeight;
+	u8t fontLength;
+	u16t row=0;
+	u16t col=0;
+	u16t ledWordsNum;
+	u16t colWordsNum;
+	u16t rowWordsNum;
 	//u8t tmp[32]={0x1F,0xF0,0x10,0x10,0x10,0x10,0x1f,0xf0,0x10,0x10,0x10,0x10,0x1f,0xf0,0x00,0x00,0xff,0xfe,0x01,0x00,0x11,0x00,0x11,0xf8,0x11,0x00,0x29,0x00,0x45,0x00,0x83,0xfe};
 	/*
 	for(i=0;i<4;i++)
@@ -181,6 +243,13 @@ void Dis_Static(u8t *textStr,u8t strLength)
 			
 	}
 	*/
+	fontWidth=GET_FONT_WIDTH(FONT_SIZE_15X16);
+	fontHeight=GET_FONT_HEIGHT(FONT_SIZE_15X16);
+	fontLength=fontWidth*fontHeight/sizeof(u8t);
+	ledWordsNum=(LED_COLS/fontWidth)*(LED_ROWS/fontHeight);
+	colWordsNum=LED_COLS/fontWidth;
+	rowWordsNum=LED_ROWS/fontHeight;
+	
 	Dis_ClearScreen();
 	for(k=0;k<strLength;k++)
 	{
@@ -200,12 +269,17 @@ void Dis_Static(u8t *textStr,u8t strLength)
 		while(GT32_Test()!=DEF_TRUE)
 		{
 		}
-		Char2Lattice(ucode, LedBuffer[words], FONT_SIZE_15X16);
+		if((words%colWordsNum)==0&&(words!=0))
+		{
+			++row;
+		}
+		Char2Lattice(ucode, &LedBuffer[words%colWordsNum/2][words%colWordsNum%2+row*16], fontSize);
+		//Char2Lattice(ucode, LedBuffer[words], fontSize);
 		++words;
 		//Dis_ClearScreen();
 	}
 	//memcpy(LedBuffer[1],tmp,sizeof(tmp));
-	for(i=0;i<255;i++)
+	for(i=0;i<255555;i++)
 	{
 		Display();
 	}
@@ -269,9 +343,10 @@ void Dis_RightToLeft(u8t *textStr,u8t strLength)
 	u8t col;
 	u16t ucode;
 	u8t words;
+	u8t testLattice[32]={0x1F,0xF0,0x10,0x10,0x10,0x10,0x1f,0xf0,0x10,0x10,0x10,0x10,0x1f,0xf0,0x00,0x00,0xff,0xfe,0x01,0x00,0x11,0x00,0x11,0xf8,0x11,0x00,0x29,0x00,0x45,0x00,0x83,0xfe};
 	Dis_ClearScreen();
 	//memset(LedNextCol,0,sizeof(LedNextCol));
-	ucode=(textStr[0]<<8)|textStr[1];
+	//ucode=(textStr[0]<<8)|textStr[1];
 	//Char2Lattice(ucode,LedBuffer[3],FONT_SIZE_15X16);
 	//Char2Lattice((textStr[0]<<8)|textStr[1],LedBuffer[0],FONT_SIZE_15X16);
 	//Char2Lattice((textStr[2]<<8)|textStr[3],LedBuffer[1],FONT_SIZE_15X16);
@@ -299,31 +374,56 @@ void Dis_RightToLeft(u8t *textStr,u8t strLength)
 		{
 			//Delay_ms(100);
 		}
-		Char2Lattice(ucode,LedBuffer[4],FONT_SIZE_15X16);
-		//memcpy(LedBuffer[words-1],LedNextCol,sizeof(LedNextCol));
+		Char2Lattice(ucode,LedBuffer[(LED_COLS/FONT_WIDTH)],FONT_SIZE_15X16);
+		//Char2Lattice(ucode,LedNextCol,FONT_SIZE_15X16);
+		//memcpy(LedNextCol,testLattice,sizeof(LedNextCol));
 		
-		for(col=0;col<16;col++)
+		for(col=0;col<FONT_WIDTH;col++)
 		{	
-			for(i=0;i<5;i++)
+			for(i=0;i<(LED_COLS/FONT_WIDTH);i++)
 			{
-				for(j=0;j<16;j++)
+				for(j=0;j<FONT_HEIGHT;j++)
 				{
 					LedBuffer[i][2*j]=(LedBuffer[i][2*j]<<1)|(LedBuffer[i][2*j+1]>>7);
 					
-					if(i!=4)
+					if(i!=((LED_COLS/FONT_WIDTH)-1))
 					{
 						LedBuffer[i][2*j+1]=(LedBuffer[i][2*j+1]<<1)|(LedBuffer[i+1][2*j]>>7);
 					}
 					else
 					{
-						
-						//Char2Lattice(ucode,LedBuffer[0],FONT_SIZE_15X16);
-						//memset(LedBuffer,1,sizeof(LedBuffer));
-						//memcpy(LedBuffer[3],LedNextCol,sizeof(LedNextCol));
-
-						//LedBuffer[i][2*j+1]=(LedBuffer[i][2*j+1]<<1)|(LedNextCol[2*j]>>7);
-						//LedNextCol[2*j]=(LedNextCol[2*j]<<1)|(LedNextCol[2*j+1]>>7);
-						//LedNextCol[2*j+1]=LedNextCol[2*j+1]<<1;
+						//LedBuffer[i][2*j+1]=LedBuffer[i][2*j+1]<<1;
+						LedBuffer[i][2*j+1]=(LedBuffer[i][2*j+1]<<1)|(LedNextCol[2*j]>>7);
+						LedNextCol[2*j]=(LedNextCol[2*j]<<1)|(LedNextCol[2*j+1]>>7);
+						LedNextCol[2*j+1]=LedNextCol[2*j+1]<<1;
+					}
+				}
+			} 
+			for(n=0;n<50;n++)
+			{
+				Display();
+			}
+		}
+	}
+	memset(LedBuffer[(LED_COLS/FONT_WIDTH)],0,sizeof(LedBuffer[(LED_COLS/FONT_WIDTH)]));
+	for(k=0;k<(LED_COLS/FONT_WIDTH);k++)
+	{
+		//memcpy(LedBuffer[4],testLattice,sizeof(testLattice));
+		//memset(LedBuffer[4],0x00,sizeof(testLattice));
+		for(col=0;col<FONT_WIDTH;col++)
+		{	
+			for(i=0;i<(LED_COLS/FONT_WIDTH)+1;i++)
+			{
+				for(j=0;j<FONT_HEIGHT;j++)
+				{
+					LedBuffer[i][2*j]=(LedBuffer[i][2*j]<<1)|(LedBuffer[i][2*j+1]>>7);
+					
+					if(i!=(LED_COLS/FONT_WIDTH))
+					{
+						LedBuffer[i][2*j+1]=(LedBuffer[i][2*j+1]<<1)|(LedBuffer[i+1][2*j]>>7);
+					}
+					else
+					{
 						LedBuffer[i][2*j+1]=LedBuffer[i][2*j+1]<<1;
 					}
 				}
@@ -365,22 +465,22 @@ void Dis_BottomToTop(u8t *textStr,u8t strLength)
 		{
 			//Delay_ms(100);
 		}
-		Char2Lattice(ucode,LedNextRow[(words-1)%4],FONT_SIZE_15X16);
-		if(((words%4)!=0)&&(k<strLength-1))
+		Char2Lattice(ucode,LedNextRow[(words-1)%(LED_COLS/FONT_WIDTH)],FONT_SIZE_15X16);
+		if(((words%(LED_COLS/FONT_WIDTH))!=0)&&(k<strLength-1))
 		{
 			continue;
 		}
-		if((words%4)!=0)
+		if((words%(LED_COLS/FONT_WIDTH))!=0)
 		{
-			for(i=(words%4);i<4;i++)
+			for(i=(words%(LED_COLS/FONT_WIDTH));i<(LED_COLS/FONT_WIDTH);i++)
 			{
-				memset(LedNextRow[i],0,32);
+				memset(LedNextRow[i],0,sizeof(LedNextRow[i]));
 			}
 		}
 		words=0;
-		for(i=0;i<16;i++)
+		for(i=0;i<LED_ROWS;i++)
 		{
-			for(j=0;j<4;j++)
+			for(j=0;j<(LED_COLS/FONT_WIDTH);j++)
 			{
 				memcpy(&LedBuffer[j][0],&LedBuffer[j][2],30);
 				memcpy(&LedBuffer[j][30],&LedNextRow[j][0],2);
@@ -392,13 +492,13 @@ void Dis_BottomToTop(u8t *textStr,u8t strLength)
 			}
 		}
 	}
-	for(i=0;i<4;i++)
+	for(i=0;i<(LED_COLS/FONT_WIDTH);i++)
 	{
-		memset(LedNextRow[i],0,32);
+		memset(LedNextRow[i],0,sizeof(LedNextRow[i]));
 	}
-	for(i=0;i<16;i++)
+	for(i=0;i<LED_ROWS;i++)
 	{
-		for(j=0;j<4;j++)
+		for(j=0;j<(LED_COLS/FONT_WIDTH);j++)
 		{
 			memcpy(&LedBuffer[j][0],&LedBuffer[j][2],30);
 			memcpy(&LedBuffer[j][30],&LedNextRow[j][0],2);
@@ -421,14 +521,25 @@ void Display(void)
 {
 	u8t i;
 	u8t j;
-	for(i=0;i<16;i++)
+	for(i=0;i<8;i++)
 	{
 		SelectOneRow(i);
-		for(j=0;j<4;j++)
+		for(j=0;j<8;j++)
 		{
-			WriteByte(LedBuffer[j][i*2],i);
-			WriteByte(LedBuffer[j][i*2+1],i);
+			//WriteByte(LedBuffer[j][i*2],i);
+			//WriteByte(LedBuffer[j][i*2+1],i);
+			WriteDoubleRowByte(LedBuffer[j][i*2],LedBuffer[j][(i+8)*2],i);
+			WriteDoubleRowByte(LedBuffer[j][i*2+1],LedBuffer[j][(i+8)*2+1],i);
+
+			
 		}
+	
+		//for(j=0;j<4;j++)
+		//{
+		//	WriteByte(LedBuffer[j][(i+8)*2],i+8);
+		//	WriteByte(LedBuffer[j][(i+8)*2+1],i+8);
+		//}
+		
 		DisplayInRow();
 		Clr_CE;
 		Delay_ms(40);
@@ -436,6 +547,47 @@ void Display(void)
 	}
 }
 
+void Dis_Test(void)
+{
+	s8t i;
+	s8t j;
+	s8t n;
+	s8t k;
+	s8t dat;
+	Dis_ClearScreen();
+	for(i=3;i>=0;i--)
+	{
+		dat=0x01;
+		for(k=0;k<8;k++)
+		{
+			memset(LedBuffer,0,sizeof(LedBuffer));
+			for(j=0;j<16;j++)
+			{
+				LedBuffer[i][2*j+1]=dat;
+			}
+			for(n=0;n<50;n++)
+			{	
+				Display();
+			}
+			dat<<=1;
+		}
+		dat=0x01;
+		for(k=0;k<8;k++)
+		{
+			memset(LedBuffer,0,sizeof(LedBuffer));
+			for(j=0;j<16;j++)
+			{
+				LedBuffer[i][2*j]=dat;				
+			}
+			for(n=0;n<50;n++)
+			{	
+				Display();
+			}
+			dat<<=1;
+		}
+	}
+	
+}
 void Delay_ms(u32t time)
 {
     u32t i,j;
